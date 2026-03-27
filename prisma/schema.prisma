@@ -1,0 +1,476 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────
+
+enum Role {
+  PARENT
+  JUNIOR
+  COACH
+  ORGANIZER
+  ADMIN
+}
+
+enum ListingType {
+  COURSE
+  RANGE
+  COACH
+  ACADEMY
+  TEAM
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  COMPETITIVE
+}
+
+enum PriceTier {
+  FREE
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum EventType {
+  TOURNAMENT
+  CLINIC
+  CAMP
+  LEAGUE
+  SHOWCASE
+  SCRAMBLE
+  QUALIFIER
+  OTHER
+}
+
+enum ClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PostFlair {
+  QUESTION
+  REVIEW
+  TOURNAMENT_REPORT
+  TIPS
+  RECRUITING
+  NEWS
+  GENERAL
+}
+
+// ─────────────────────────────────────────
+// USER + AUTH
+// ─────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  password      String?
+  role          Role      @default(PARENT)
+
+  // COPPA fields
+  dateOfBirth      DateTime?
+  isMinor          Boolean   @default(false)
+  parentEmail      String?
+  consentGrantedAt DateTime?
+
+  // Location
+  city    String?
+  state   String?
+  zipCode String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  coachProfile  CoachProfile?
+  playerProfile PlayerProfile?
+  reviews       Review[]
+  posts         Post[]
+  replies       Reply[]
+  upvotes       Upvote[]
+  claimRequests ClaimRequest[]
+  ownedListings Listing[]      @relation("ListingOwner")
+  events        Event[]        @relation("EventOrganizer")
+  eventRsvps    EventRsvp[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─────────────────────────────────────────
+// PROFILES
+// ─────────────────────────────────────────
+
+model CoachProfile {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  bio             String?   @db.Text
+  credentials     String[]
+  specialties     String[]
+  ageGroupsServed String[]
+  priceRangeMin   Int?
+  priceRangeMax   Int?
+  pgaMemberNumber String?
+  verifiedAt      DateTime?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listings Listing[] @relation("CoachListings")
+
+  @@index([userId])
+}
+
+model PlayerProfile {
+  id             String  @id @default(cuid())
+  userId         String  @unique
+  handicapIndex  Float?
+  homeCourseId   String?
+  graduationYear Int?
+  goals          String? @db.Text
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  homeCourse Listing? @relation("HomeCourse", fields: [homeCourseId], references: [id])
+}
+
+// ─────────────────────────────────────────
+// LISTINGS
+// ─────────────────────────────────────────
+
+model Listing {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  name        String
+  type        ListingType
+  description String?     @db.Text
+
+  address String?
+  city    String
+  state   String
+  zipCode String?
+  country String  @default("US")
+
+  lat Float?
+  lng Float?
+
+  phone   String?
+  website String?
+  email   String?
+  hours   Json?
+
+  ageMin       Int?
+  ageMax       Int?
+  skillLevels  SkillLevel[]
+  priceTier    PriceTier?
+  programTypes String[]
+
+  isVerified       Boolean   @default(false)
+  isJuniorFriendly Boolean   @default(false)
+  verifiedAt       DateTime?
+  ownerId          String?
+  isClaimed        Boolean   @default(false)
+  isActive         Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner         User?           @relation("ListingOwner", fields: [ownerId], references: [id])
+  coaches       CoachProfile[]  @relation("CoachListings")
+  photos        ListingPhoto[]
+  reviews       Review[]
+  events        Event[]         @relation("EventVenue")
+  claimRequests ClaimRequest[]
+  homeCourseFor PlayerProfile[] @relation("HomeCourse")
+
+  @@index([type])
+  @@index([city, state])
+  @@index([lat, lng])
+  @@index([isClaimed])
+  @@index([isActive])
+}
+
+model ListingPhoto {
+  id         String   @id @default(cuid())
+  listingId  String
+  s3Key      String
+  url        String
+  caption    String?
+  isPrimary  Boolean  @default(false)
+  uploadedBy String?
+  createdAt  DateTime @default(now())
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+}
+
+// ─────────────────────────────────────────
+// CLAIMING FLOW
+// ─────────────────────────────────────────
+
+model ClaimRequest {
+  id              String      @id @default(cuid())
+  listingId       String
+  claimantId      String
+  status          ClaimStatus @default(PENDING)
+  documentKeys    String[]
+  message         String?     @db.Text
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  rejectionReason String?     @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listing  Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  claimant User    @relation(fields: [claimantId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, claimantId])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────
+// REVIEWS
+// ─────────────────────────────────────────
+
+model Review {
+  id        String   @id @default(cuid())
+  listingId String
+  authorId  String
+  rating    Int
+  title     String?
+  body      String   @db.Text
+  photoKeys String[]
+
+  isVerifiedVisit Boolean @default(false)
+  isFlagged       Boolean @default(false)
+  flagReason      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, authorId])
+  @@index([listingId])
+  @@index([authorId])
+  @@index([rating])
+}
+
+// ─────────────────────────────────────────
+// EVENTS
+// ─────────────────────────────────────────
+
+model Event {
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  organizerId     String
+  venueId         String?
+
+  title           String
+  description     String?   @db.Text
+  eventType       EventType
+  format          String?
+  tourAffiliation String?
+
+  venueName String?
+  address   String?
+  city      String
+  state     String
+
+  lat Float?
+  lng Float?
+
+  dateStart            DateTime
+  dateEnd              DateTime?
+  registrationDeadline DateTime?
+
+  ageDivisions    String[]
+  skillLevels     SkillLevel[]
+  entryFee        Int?
+  maxParticipants Int?
+  spotsRemaining  Int?
+  registrationUrl String?
+
+  isPublished Boolean @default(false)
+  isCanceled  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizer User         @relation("EventOrganizer", fields: [organizerId], references: [id])
+  venue     Listing?     @relation("EventVenue", fields: [venueId], references: [id])
+  photos    EventPhoto[]
+  rsvps     EventRsvp[]
+
+  @@index([dateStart])
+  @@index([city, state])
+  @@index([eventType])
+  @@index([organizerId])
+  @@index([isPublished])
+}
+
+model EventPhoto {
+  id        String   @id @default(cuid())
+  eventId   String
+  s3Key     String
+  url       String
+  caption   String?
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+model EventRsvp {
+  id      String   @id @default(cuid())
+  eventId String
+  userId  String
+  savedAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────
+// COMMUNITY FORUM
+// ─────────────────────────────────────────
+
+model ForumCommunity {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  description String? @db.Text
+  iconUrl     String?
+  isDefault   Boolean @default(false)
+
+  posts Post[]
+
+  @@index([slug])
+}
+
+model Post {
+  id          String    @id @default(cuid())
+  communityId String
+  authorId    String
+  flair       PostFlair @default(GENERAL)
+
+  title     String
+  body      String   @db.Text
+  mediaKeys String[]
+
+  upvoteCount Int @default(0)
+  replyCount  Int @default(0)
+
+  isPinned  Boolean @default(false)
+  isLocked  Boolean @default(false)
+  isFlagged Boolean @default(false)
+  isRemoved Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  community ForumCommunity @relation(fields: [communityId], references: [id])
+  author    User           @relation(fields: [authorId], references: [id])
+  replies   Reply[]
+  upvotes   Upvote[]       @relation("PostUpvotes")
+
+  @@index([communityId, createdAt(sort: Desc)])
+  @@index([communityId, upvoteCount(sort: Desc)])
+  @@index([authorId])
+}
+
+model Reply {
+  id            String  @id @default(cuid())
+  postId        String
+  authorId      String
+  parentReplyId String?
+
+  body        String  @db.Text
+  upvoteCount Int     @default(0)
+
+  isFlagged Boolean @default(false)
+  isRemoved Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author       User     @relation(fields: [authorId], references: [id])
+  parentReply  Reply?   @relation("ReplyThread", fields: [parentReplyId], references: [id])
+  childReplies Reply[]  @relation("ReplyThread")
+  upvotes      Upvote[] @relation("ReplyUpvotes")
+
+  @@index([postId, createdAt])
+  @@index([authorId])
+}
+
+model Upvote {
+  id      String  @id @default(cuid())
+  userId  String
+  postId  String?
+  replyId String?
+
+  createdAt DateTime @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post  Post?  @relation("PostUpvotes", fields: [postId], references: [id], onDelete: Cascade)
+  reply Reply? @relation("ReplyUpvotes", fields: [replyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@unique([userId, replyId])
+  @@index([postId])
+  @@index([replyId])
+}
