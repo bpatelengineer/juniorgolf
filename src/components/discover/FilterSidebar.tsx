@@ -32,7 +32,11 @@ function Toggle({ label, active, onClick }: { label: string; active: boolean; on
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${active ? "border-green-600 bg-green-600 text-white" : "border-gray-300 text-gray-600 hover:border-green-400"}`}
+      className={`rounded-full px-3 py-1 text-xs font-medium transition-all duration-150 ${
+        active
+          ? "bg-green-700 text-white shadow-sm"
+          : "bg-white border border-gray-200 text-gray-600 hover:border-green-300 hover:text-green-700 hover:bg-green-50"
+      }`}
     >
       {label}
     </button>
@@ -62,8 +66,8 @@ export function FilterSidebar({ filters, onChange }: FilterSidebarProps) {
       />
 
       <div>
-        <p className="mb-2 text-sm font-medium text-gray-700">Type</p>
-        <div className="flex flex-wrap gap-2">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Type</p>
+        <div className="flex flex-wrap gap-1.5">
           {Object.entries(LISTING_TYPE_LABELS).map(([k, label]) => (
             <Toggle
               key={k}
@@ -76,8 +80,8 @@ export function FilterSidebar({ filters, onChange }: FilterSidebarProps) {
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-medium text-gray-700">Skill Level</p>
-        <div className="flex flex-wrap gap-2">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Skill Level</p>
+        <div className="flex flex-wrap gap-1.5">
           {Object.entries(SKILL_LEVEL_LABELS).map(([k, label]) => (
             <Toggle
               key={k}
@@ -90,8 +94,8 @@ export function FilterSidebar({ filters, onChange }: FilterSidebarProps) {
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-medium text-gray-700">Price</p>
-        <div className="flex flex-wrap gap-2">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">Price</p>
+        <div className="flex flex-wrap gap-1.5">
           {Object.entries(PRICE_TIER_LABELS).map(([k, label]) => (
             <Toggle
               key={k}
@@ -126,11 +130,12 @@ export function FilterSidebar({ filters, onChange }: FilterSidebarProps) {
 
       <button
         type="button"
-        className="text-sm text-gray-400 hover:text-red-500 underline"
+        className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-150 border border-transparent hover:border-red-100"
         onClick={() =>
           onChange({ query: "", types: [], skillLevels: [], priceTiers: [], ageMin: "", ageMax: "", radiusMiles: 25 })
         }
       >
+        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
         Clear all filters
       </button>
     </aside>

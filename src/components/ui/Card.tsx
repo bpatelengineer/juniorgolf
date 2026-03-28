@@ -10,8 +10,8 @@ export function Card({ className, children, onClick }: CardProps) {
   return (
     <div
       className={cn(
-        "rounded-xl border border-gray-200 bg-white shadow-sm",
-        onClick && "cursor-pointer hover:shadow-md transition-shadow",
+        "rounded-2xl border border-gray-100 bg-white shadow-sm",
+        onClick && "cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200",
         className
       )}
       onClick={onClick}
