@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/ui/Logo";
 
 export function Footer() {
   return (
@@ -6,10 +7,10 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 mb-10">
           <div className="col-span-2 md:col-span-1">
-            <span className="font-bold text-gray-900 text-lg tracking-tight">
-              Junior<span className="text-green-700">Links</span>
-            </span>
-            <p className="mt-2 text-sm text-gray-500 leading-relaxed max-w-xs">The youth golf discovery & community platform for DFW families.</p>
+            <Link href="/" aria-label="JuniorLinks home">
+              <Logo size="sm" />
+            </Link>
+            <p className="mt-3 text-sm text-gray-500 leading-relaxed max-w-xs">The youth golf discovery & community platform for DFW families.</p>
           </div>
           <div>
             <h4 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Discover</h4>

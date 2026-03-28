@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
+import { Logo } from "@/components/ui/Logo";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -22,13 +23,8 @@ export function Navbar() {
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 font-bold text-gray-900 text-lg tracking-tight">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-700 text-white shadow-sm">
-            <svg className="h-4.5 w-4.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <span>Junior<span className="text-green-700">Links</span></span>
+        <Link href="/" aria-label="JuniorLinks home">
+          <Logo size="sm" />
         </Link>
 
         {/* Desktop nav */}

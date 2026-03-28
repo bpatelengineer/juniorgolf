@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Logo } from "@/components/ui/Logo";
 
 function LoginForm() {
   const router = useRouter();
@@ -51,11 +52,10 @@ function LoginForm() {
       <div className="w-full max-w-md">
         {/* Logo / Header */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 text-green-700 font-bold text-2xl">
-            <span className="text-3xl">⛳</span>
-            JuniorLinks
+          <Link href="/" className="inline-flex justify-center">
+            <Logo size="md" />
           </Link>
-          <h1 className="mt-4 text-2xl font-bold text-gray-900">Welcome back</h1>
+          <h1 className="mt-5 text-2xl font-bold text-gray-900">Welcome back</h1>
           <p className="mt-1 text-sm text-gray-500">Sign in to your account</p>
         </div>
 
