@@ -1,0 +1,82 @@
+// JuniorLinks data model — MVP slice (PRD §11.2).
+// SQLite for local dev; swap provider to "postgresql" for production.
+// SQLite via Prisma doesn't support enums, so constrained fields are
+// documented strings.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// type: course | range | instructor | academy | camp
+// skillLevels: comma-separated of beginner | intermediate | competitive
+// priceTier: 1 ($) | 2 ($$) | 3 ($$$)
+// source: manual | imported | claimed
+model Listing {
+  id             String    @id @default(cuid())
+  name           String
+  type           String
+  description    String
+  address        String
+  city           String
+  state          String
+  zip            String
+  lat            Float
+  lng            Float
+  phone          String?
+  website        String?
+  hours          String?
+  ageMin         Int
+  ageMax         Int
+  skillLevels    String
+  priceTier      Int
+  programs       String // comma-separated: lessons | clinics | leagues | camps | tournaments
+  verified       Boolean   @default(false)
+  claimed        Boolean   @default(false)
+  source         String    @default("manual")
+  lastVerifiedAt DateTime?
+  reviews        Review[]
+  createdAt      DateTime  @default(now())
+}
+
+model Review {
+  id            String   @id @default(cuid())
+  listing       Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId     String
+  authorName    String
+  rating        Int // 1–5
+  body          String
+  verifiedVisit Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
+
+// eventType: tournament | clinic | league | camp | showcase | scramble | qualifier
+model Event {
+  id                   String    @id @default(cuid())
+  title                String
+  description          String
+  eventType            String
+  venueName            String
+  address              String
+  city                 String
+  state                String
+  lat                  Float
+  lng                  Float
+  dateStart            DateTime
+  dateEnd              DateTime?
+  ageDivisions         String // e.g. "Boys/Girls 10-12, 13-15, 16-18"
+  skillLevel           String? // beginner | intermediate | competitive | all
+  entryFee             Int // cents; 0 = free
+  format               String? // stroke play | match play | scramble | ...
+  registrationUrl      String
+  registrationDeadline DateTime?
+  maxParticipants      Int?
+  spotsRemaining       Int?
+  organizerName        String
+  tourAffiliation      String?
+  createdAt            DateTime  @default(now())
+}
