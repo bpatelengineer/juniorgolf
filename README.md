@@ -41,6 +41,21 @@ npm run dev        # http://localhost:3000
 
 Other scripts: `npm run db:seed` (reseed), `npm run build`, `npm run lint`.
 
+## Deploying to Railway
+
+The repo ships with `railway.json` (Nixpacks build, `npm run start:prod` —
+which runs `prisma migrate deploy`, seeds the DB if empty, then starts Next).
+
+1. Create a project at railway.app and connect this GitHub repo (or run
+   `railway init && railway up` with the CLI).
+2. Add a **volume** mounted at `/data` so the SQLite file survives deploys.
+3. Set the environment variable `DATABASE_URL=file:/data/prod.db`.
+4. Deploy — the health check hits `/` once the app is serving.
+
+For real production traffic, provision Railway Postgres instead: change the
+`provider` in `prisma/schema.prisma` to `postgresql`, point `DATABASE_URL`
+at the Postgres instance, and regenerate the migrations.
+
 ## Not yet built (next phases)
 
 - User accounts incl. COPPA parent/child flow (PRD story P4) — planned on

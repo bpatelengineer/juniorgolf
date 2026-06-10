@@ -708,6 +708,14 @@ const events = [
 ];
 
 async function main() {
+  // In production the seed runs on every boot (see start:prod); only
+  // reseed when the database is empty unless --force is passed.
+  const force = process.argv.includes("--force");
+  if (!force && (await prisma.listing.count()) > 0) {
+    console.log("Database already seeded; skipping (use --force to reseed).");
+    return;
+  }
+
   await prisma.review.deleteMany();
   await prisma.event.deleteMany();
   await prisma.listing.deleteMany();
